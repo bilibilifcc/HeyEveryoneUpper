@@ -143,7 +143,7 @@ class SerialParser:
                 return
 
             # Locate frame header
-            idx = self._buf.find(bytes([UART_FRAME_HEADER]))
+            idx = self._buf.find(UART_FRAME_HEADER)
             if idx < 0:
                 self._buf.clear()
                 return
@@ -165,12 +165,15 @@ class SerialParser:
 
             if expected_cs == actual_cs:
                 self._dispatch_payload(self._buf[2 : frame_end - 1])
+            else:
+                print(f"[Serial] Checksum mismatch: expected 0x{expected_cs:02X}, got 0x{actual_cs:02X}")
 
             del self._buf[:frame_end]
 
     def _dispatch_payload(self, payload: bytearray) -> None:
         """Split payload into 3-byte entries and fire callback."""
         if len(payload) % 3 != 0:
+            print(f"[Serial] Malformed payload: {len(payload)} bytes (not multiple of 3), dropping")
             return  # malformed, drop
 
         for i in range(0, len(payload), 3):
@@ -181,5 +184,5 @@ class SerialParser:
             if self.callback is not None:
                 try:
                     self.callback(event)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    print(f"[Serial] Callback error: {exc}")

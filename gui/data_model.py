@@ -63,13 +63,19 @@ class TransmitterState:
 
         if event_type in ALL_BUTTON_TYPES:
             self.buttons[event_type] = True
-            self.last_event_desc = f"Btn {BUTTON_NAMES[event_type]}"
+            desc = f"Btn {BUTTON_NAMES[event_type]}"
+            self.last_event_desc = desc
+            print(f"[DataModel] TX#{self.sender_id}: {desc}")
         elif event_type == EVENT_ENCODER_CW:
             self.encoder_value += event_value
-            self.last_event_desc = f"Encoder ▶ +{event_value}"
+            desc = f"Encoder ▶ +{event_value} → {self.encoder_value}"
+            self.last_event_desc = desc
+            print(f"[DataModel] TX#{self.sender_id}: {desc}")
         elif event_type == EVENT_ENCODER_CCW:
             self.encoder_value -= event_value
-            self.last_event_desc = f"Encoder ◀ -{event_value}"
+            desc = f"Encoder ◀ -{event_value} → {self.encoder_value}"
+            self.last_event_desc = desc
+            print(f"[DataModel] TX#{self.sender_id}: {desc}")
 
     def reset_button(self, event_type: int) -> None:
         """Clear a button's pressed state (called after highlight timeout)."""

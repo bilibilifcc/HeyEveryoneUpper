@@ -40,6 +40,8 @@ GRID_COLS = 4
 class MainWindow(QMainWindow):
     """Top-level window for the receiver monitor."""
 
+    _event_signal: pyqtBoundSignal = pyqtSignal(object)  # cross-thread signal (object for queued conn)
+
     def __init__(self) -> None:
         super().__init__()
         self.data_model = DataModel()
@@ -49,6 +51,9 @@ class MainWindow(QMainWindow):
 
         self._build_ui()
         self._connect_signals()
+
+        # Route serial-thread events to main thread via signal
+        self._event_signal.connect(self._handle_event)
 
         # Timer – clears button highlights 250 ms after last button event
         self._reset_timer = QTimer(self)
@@ -191,12 +196,11 @@ class MainWindow(QMainWindow):
     # ── Event handling (called from serial thread) ───────────────────
 
     def _on_parsed_event(self, event: ParsedEvent) -> None:
-        """Called from the serial reader thread — forward to GUI thread."""
-        # We use QTimer.singleShot with a lambda (0-ms timer) to push
-        # the update onto the Qt event loop so it runs on the main thread.
-        QTimer.singleShot(0, lambda e=event: self._handle_event(e))
+        """Called from the serial reader thread — forward to GUI thread via signal."""
+        self._event_signal.emit(event)
 
     def _handle_event(self, event: ParsedEvent) -> None:
+        print(f"[GUI] Handle on main thread: {event}")
         self.data_model.handle_event(event.sender_id, event.event_type, event.event_value)
         self._ensure_widget(event.sender_id)
         self._widgets[event.sender_id].update_state(
